@@ -61,4 +61,7 @@
    <FileRef
       location = "group:uniform_buffer_object_std140/uniform_buffer_object_std140.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:ext_texture_filter_anisotropic/ext_texture_filter_anisotropic.xcodeproj">
+   </FileRef>
 </Workspace>
