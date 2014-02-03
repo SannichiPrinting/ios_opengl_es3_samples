@@ -64,4 +64,7 @@
    <FileRef
       location = "group:ext_texture_filter_anisotropic/ext_texture_filter_anisotropic.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:occlusion_culling/occlusion_culling.xcodeproj">
+   </FileRef>
 </Workspace>
