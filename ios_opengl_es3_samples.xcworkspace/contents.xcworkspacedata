@@ -67,4 +67,7 @@
    <FileRef
       location = "group:occlusion_culling/occlusion_culling.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:occlusion_culling_collision/occlusion_culling_collision.xcodeproj">
+   </FileRef>
 </Workspace>
