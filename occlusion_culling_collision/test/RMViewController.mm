@@ -35,9 +35,8 @@ enum
 
 enum DRAW_OBJECT
 {
-	POT,
-	PLATE,
-	POT_AABB,
+	BOX0,
+	BOX1,
 	
 	COUNT
 };
@@ -54,28 +53,20 @@ struct DrawObject
     GLuint ibo;
 };
 
-static float plate_verteces[] =
+static float box_verteces[] =
 {
-	-0.15f, -0.1f, 0.0f,
-	 0.15f, -0.1f, 0.0f,
-	-0.15f,  0.2f, 0.0f,
-	 0.15f,  0.2f, 0.0f,
+	-2.0f, -1.0f, -1.0f,
+	2.0f, -1.0f, -1.0f,
+	2.0f, -1.0f, 1.0f,
+	-2.0f, -1.0f, 1.0f,
+	
+	-2.0f, 1.0f, -1.0f,
+	2.0f, 1.0f, -1.0f,
+	2.0f, 1.0f, 1.0f,
+	-2.0f, 1.0f, 1.0f,
 };
 
-static float plate_normals[] =
-{
-	-0.1f, -0.1f, 1.0f,
-	0.1f, -0.1f, 1.0f,
-	-0.1f, 0.1f, 1.0f,
-	0.1f, 0.1f, 1.0f,
-};
-
-static short plate_indeces[] =
-{
-	0, 1, 2, 3,
-};
-
-static short aabb_indeces[] =
+static short box_indeces[] =
 {
 	0, 1, 3, 2, 7, 6, 4, 5,
 	-1,
@@ -88,7 +79,7 @@ static short aabb_indeces[] =
     float _rotation;
 	
 	DrawObject _drawObjects[DRAW_OBJECT::COUNT];
-	GLuint _query;
+	GLuint _queryList[2];
 }
 @property (strong, nonatomic) EAGLContext *context;
 
@@ -154,73 +145,8 @@ static short aabb_indeces[] =
     [self loadShaders];
     
     glEnable(GL_DEPTH_TEST);
-
+	
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-	
-	// ポットのAABB作成
-	GLKVector3 minPos = {FLT_MAX, FLT_MAX, FLT_MAX};
-	GLKVector3 maxPos = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
-	for (uint32_t i = 0; i < sizeof(teapot_vertices) / sizeof(teapot_vertices[0]); i += 3)
-	{
-		minPos.x = std::min(minPos.x, teapot_vertices[i]);
-		minPos.y = std::min(minPos.y, teapot_vertices[i + 1]);
-		minPos.z = std::min(minPos.z, teapot_vertices[i + 2]);
-		
-		maxPos.x = std::max(maxPos.x, teapot_vertices[i]);
-		maxPos.y = std::max(maxPos.y, teapot_vertices[i + 1]);
-		maxPos.z = std::max(maxPos.z, teapot_vertices[i + 2]);
-	}
-	
-	float aabb_verteces[] =
-	{
-		minPos.x, minPos.y, minPos.z,
-		maxPos.x, minPos.y, minPos.z,
-		maxPos.x, minPos.y, maxPos.z,
-		minPos.x, minPos.y, maxPos.z,
-		
-		minPos.x, maxPos.y, minPos.z,
-		maxPos.x, maxPos.y, minPos.z,
-		maxPos.x, maxPos.y, maxPos.z,
-		minPos.x, maxPos.y, maxPos.z,
-	};
-	
-	
-	float* dataBufferListPosition[] =
-	{
-		teapot_vertices,
-		plate_verteces,
-		aabb_verteces,
-	};
-	uint32_t dataSizeListPosition[] =
-	{
-		sizeof(teapot_vertices),
-		sizeof(plate_verteces),
-		sizeof(aabb_verteces),
-	};
-	float* dataBufferListNormal[] =
-	{
-		teapot_normals,
-		plate_normals,
-		aabb_verteces,
-	};
-	uint32_t dataSizeListNormal[] =
-	{
-		sizeof(teapot_normals),
-		sizeof(plate_normals),
-		sizeof(aabb_verteces),
-	};
-	short* dataBufferListIndex[] =
-	{
-		teapot_indices,
-		plate_indeces,
-		aabb_indeces,
-	};
-	uint32_t dataSizeListIndex[] =
-	{
-		sizeof(teapot_indices),
-		sizeof(plate_indeces),
-		sizeof(aabb_indeces),
-	};
 	
 	for (uint32_t i = 0; i < DRAW_OBJECT::COUNT; ++i)
 	{
@@ -231,14 +157,14 @@ static short aabb_indeces[] =
 		
 		glGenBuffers(1, &obj.vbo_position);
 		glBindBuffer(GL_ARRAY_BUFFER, obj.vbo_position);
-		glBufferData(GL_ARRAY_BUFFER, dataSizeListPosition[i], dataBufferListPosition[i], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(box_verteces), box_verteces, GL_STATIC_DRAW);
 		
 		glEnableVertexAttribArray(ATTRIB_POSITION);
 		glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 12, BUFFER_OFFSET(0));
 
 		glGenBuffers(1, &obj.vbo_normal);
 		glBindBuffer(GL_ARRAY_BUFFER, obj.vbo_normal);
-		glBufferData(GL_ARRAY_BUFFER, dataSizeListNormal[i], dataBufferListNormal[i], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(box_verteces), box_verteces, GL_STATIC_DRAW);
 
 		glEnableVertexAttribArray(ATTRIB_NORMAL);
 		glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 12, BUFFER_OFFSET(0));
@@ -246,12 +172,12 @@ static short aabb_indeces[] =
 		glGenBuffers(1, &obj.ibo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ibo);
 		
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, dataSizeListIndex[i], dataBufferListIndex[i], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(box_indeces), box_indeces, GL_STATIC_DRAW);
 		glBindVertexArray(0);
 	}
 	
 	// クエリオブジェクト作成
-	glGenQueries(1, &_query);
+	glGenQueries(2, _queryList);
 }
 
 - (void)tearDownGL
@@ -266,7 +192,7 @@ static short aabb_indeces[] =
 		glDeleteVertexArrays(1, &obj.vao);
     }
 	
-	glDeleteQueries(1, &_query);
+	glDeleteQueries(2, _queryList);
 	
     if (_program) {
         glDeleteProgram(_program);
@@ -281,99 +207,102 @@ static short aabb_indeces[] =
     float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
     GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 0.1f, 100.0f);
 	
-	GLKMatrix4 viewMatrix = GLKMatrix4MakeLookAt(0.0f, 0.2f, 0.5f, 0.0f, 0.05f, 0.0f, 0.0f, 1.0f, 0.0f);
+	GLKMatrix4 viewMatrix = GLKMatrix4MakeLookAt(0.0f, 0.2f, 10.5f, 0.0f, 0.05f, 0.0f, 0.0f, 1.0f, 0.0f);
     
-	GLKMatrix4 modelMatrix = GLKMatrix4MakeTranslation(0.0f, 0.0f, -0.3f);
-	modelMatrix = GLKMatrix4Rotate(modelMatrix, _rotation, 0.0f, 1.0f, 0.0f);
+	GLKMatrix4 modelMatrix = GLKMatrix4MakeTranslation(-1.6f, 0.5f, 0.0f);
+	modelMatrix = GLKMatrix4Rotate(modelMatrix, _rotation, 1.0f, 1.0f, 0.0f);
 	GLKMatrix4 modelViewMatrix = GLKMatrix4Multiply(viewMatrix, modelMatrix);
 	
-    _drawObjects[DRAW_OBJECT::POT].normalMatrix = GLKMatrix3InvertAndTranspose(GLKMatrix4GetMatrix3(modelViewMatrix), NULL);
-    _drawObjects[DRAW_OBJECT::POT].modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
+    _drawObjects[DRAW_OBJECT::BOX0].normalMatrix = GLKMatrix3InvertAndTranspose(GLKMatrix4GetMatrix3(modelViewMatrix), NULL);
+    _drawObjects[DRAW_OBJECT::BOX0].modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
 
-	modelMatrix = GLKMatrix4MakeRotation(sinf(_rotation) * 1.5f, 0.0f, 1.0f, 0.0f);
+	modelMatrix = GLKMatrix4MakeTranslation(1.6f, -0.5f, 0.0f);
+	modelMatrix = GLKMatrix4Rotate(modelMatrix, _rotation, 0.0f, 1.0f, 1.0f);
 	modelViewMatrix = GLKMatrix4Multiply(viewMatrix, modelMatrix);
 	
-    _drawObjects[DRAW_OBJECT::PLATE].normalMatrix = GLKMatrix3InvertAndTranspose(GLKMatrix4GetMatrix3(modelViewMatrix), NULL);
-    _drawObjects[DRAW_OBJECT::PLATE].modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
+    _drawObjects[DRAW_OBJECT::BOX1].normalMatrix = GLKMatrix3InvertAndTranspose(GLKMatrix4GetMatrix3(modelViewMatrix), NULL);
+    _drawObjects[DRAW_OBJECT::BOX1].modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
     
     _rotation += self.timeSinceLastUpdate * 1.0f;
 }
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect
 {
-	uint32_t indexCountList[] =
+	// オブジェクトの描画
+	auto renderObject = [](DrawObject& obj, GLKVector4 color)
 	{
-		sizeof(teapot_indices) / sizeof(teapot_indices[0]),
-		sizeof(plate_indeces) / sizeof(plate_indeces[0]),
-		sizeof(aabb_indeces) / sizeof(aabb_indeces[0]),
+		uint32_t box_index_count = sizeof(box_indeces) / sizeof(box_indeces[0]);
+		
+		glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, obj.modelViewProjectionMatrix.m);
+		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, obj.normalMatrix.m);
+		
+		glUniform4fv(uniforms[UNIFORM_COLOR], 1, color.v);
+		
+		glBindVertexArray(obj.vao);
+		glDrawElements(GL_TRIANGLE_STRIP, box_index_count, GL_UNSIGNED_SHORT, NULL);
 	};
-
+	
+	glUseProgram(_program);
+	
+	bool isHit = false;
+	
 	// 深度値だけを描画
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(_program);
- 
-	// 板の描画
-	glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::PLATE].modelViewProjectionMatrix.m);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::PLATE].normalMatrix.m);
+	auto colorDummy = GLKVector4Make(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	// Box0の表ポリゴンよりBox1の裏ポリゴンの方が前面にあるか？
+	glDepthFunc(GL_ALWAYS);
+	glDepthMask(GL_TRUE);
+	glCullFace(GL_BACK);
+	renderObject(_drawObjects[DRAW_OBJECT::BOX0], colorDummy);
 
-	glBindVertexArray(_drawObjects[DRAW_OBJECT::PLATE].vao);
-	glDrawElements(GL_TRIANGLE_STRIP, indexCountList[DRAW_OBJECT::PLATE], GL_UNSIGNED_SHORT, NULL);
+	glDepthFunc(GL_GREATER);
+	glDepthMask(GL_FALSE);
+	glCullFace(GL_FRONT);
 
-	// ポットのAABB描画
-	glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::POT].modelViewProjectionMatrix.m);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::POT].normalMatrix.m);
-
-	glBindVertexArray(_drawObjects[DRAW_OBJECT::POT_AABB].vao);
-	glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, _query);
-	glDrawElements(GL_TRIANGLE_STRIP, indexCountList[DRAW_OBJECT::POT_AABB], GL_UNSIGNED_SHORT, NULL);
+	glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, _queryList[0]);
+	renderObject(_drawObjects[DRAW_OBJECT::BOX1], colorDummy);
+	glEndQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE);
+	
+	// Box1の表ポリゴンよりBox1の裏ポリゴンの方が前面にあるか？
+	glDepthFunc(GL_ALWAYS);
+	glDepthMask(GL_TRUE);
+	glCullFace(GL_BACK);
+	renderObject(_drawObjects[DRAW_OBJECT::BOX1], colorDummy);
+		
+	glDepthFunc(GL_GREATER);
+	glDepthMask(GL_FALSE);
+	glCullFace(GL_FRONT);
+	
+	glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, _queryList[1]);
+	renderObject(_drawObjects[DRAW_OBJECT::BOX0], colorDummy);
 	glEndQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE);
 
-	// クエリの結果を取得
-	GLuint queryResult;
-	glGetQueryObjectuiv(_query, GL_QUERY_RESULT, &queryResult);
+	// 両方を満たしていた場合は衝突している
+	GLuint queryResults[2];
+	glGetQueryObjectuiv(_queryList[0], GL_QUERY_RESULT, &queryResults[0]);
+	glGetQueryObjectuiv(_queryList[1], GL_QUERY_RESULT, &queryResults[1]);
+
+	isHit = (queryResults[0] && queryResults[1]);
 	
 	// ここから通常の描画
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glClearColor(0.65f, 0.65f, 0.65f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// 板の描画
-	glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::PLATE].modelViewProjectionMatrix.m);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::PLATE].normalMatrix.m);
-
-	// ポットが描画できるかどうかで色を変える
-	if (queryResult != GL_FALSE)
-	{
-		glUniform4f(uniforms[UNIFORM_COLOR], 1.0f, 0.4f, 0.4f, 1.0f);
-	}
-	else
-	{
-		glUniform4f(uniforms[UNIFORM_COLOR], 0.4f, 1.0f, 0.4f, 1.0f);
-	}
-	glBindVertexArray(_drawObjects[DRAW_OBJECT::PLATE].vao);
-	glDrawElements(GL_TRIANGLE_STRIP, indexCountList[DRAW_OBJECT::PLATE], GL_UNSIGNED_SHORT, NULL);
-
-	// ポットの描画
-	if (queryResult != GL_FALSE)
-	{
-		glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::POT].modelViewProjectionMatrix.m);
-		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::POT].normalMatrix.m);
-		glUniform4f(uniforms[UNIFORM_COLOR], 0.4f, 0.4f, 1.0f, 1.0f);
-		
-		glBindVertexArray(_drawObjects[DRAW_OBJECT::POT].vao);
-		glDrawElements(GL_TRIANGLE_STRIP, indexCountList[DRAW_OBJECT::POT], GL_UNSIGNED_SHORT, NULL);
-	}
-
-#if 0
-	glUniformMatrix4fv(uniforms[UNIFORM_MODELVIEWPROJECTION_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::POT].modelViewProjectionMatrix.m);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL_MATRIX], 1, 0, _drawObjects[DRAW_OBJECT::POT].normalMatrix.m);
-	glUniform4f(uniforms[UNIFORM_COLOR], 0.4f, 0.4f, 0.4f, 1.0f);
 	
-	glBindVertexArray(_drawObjects[DRAW_OBJECT::POT_AABB].vao);
-	glDrawElements(GL_TRIANGLE_STRIP, indexCountList[DRAW_OBJECT::POT_AABB], GL_UNSIGNED_SHORT, NULL);
-#endif
+	for (auto& obj : _drawObjects)
+	{
+		auto color = (isHit)
+			? GLKVector4Make(1.0f, 0.4f, 0.4f, 1.0f)
+			: GLKVector4Make(0.4f, 1.0f, 0.4f, 1.0f);
+
+		renderObject(obj, color);
+	}
 }
 
 #pragma mark -  OpenGL ES 2 shader compilation
